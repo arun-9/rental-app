@@ -27,16 +27,18 @@ export default function PropertiesManagementPage() {
   const resetUnitForm = () => setNewUnit({ number: "", rent: "", tenant: "" });
 
   const handleAddUnit = (propertyId) => {
+    const newUnitWithId = {
+      id: Date.now(),
+      ...newUnit
+      // you can also include propertyId here if needed elsewhere
+    };
+
     setProperties((prev) =>
       prev.map((p) =>
-        p.id === propertyId
-          ? {
-              ...p,
-              units: [...p.units, { id: Date.now(), ...newUnit }]
-            }
-          : p
+        p.id === propertyId ? { ...p, units: [...p.units, newUnitWithId] } : p
       )
     );
+
     resetUnitForm();
     setShowUnitModal(false);
   };
@@ -69,10 +71,13 @@ export default function PropertiesManagementPage() {
   };
 
   const handleAddProperty = () => {
-    setProperties((prev) => [
-      ...prev,
-      { id: Date.now(), ...newProperty, units: [] }
-    ]);
+    const newPropertyWithId = {
+      id: Date.now(), // or use uuid if preferred
+      ...newProperty,
+      units: []
+    };
+
+    setProperties((prev) => [...prev, newPropertyWithId]);
     setNewProperty({ name: "", address: "" });
     setShowPropertyModal(false);
   };
@@ -210,7 +215,7 @@ export default function PropertiesManagementPage() {
                 type="text"
                 placeholder="Unit Number"
                 className="w-full mb-2 p-2 border rounded"
-                value={editingUnit ? editingUnit.number : newUnit.numbe}
+                value={editingUnit ? editingUnit.number : newUnit.number}
                 onChange={(e) =>
                   editingUnit
                     ? setEditingUnit({ ...editingUnit, number: e.target.value })
