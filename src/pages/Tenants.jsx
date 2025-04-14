@@ -1,221 +1,567 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
+import { PropertyContext } from "../context/PropertyContext";
 
-function Tenants() {
+export default function TenantsPage() {
+  const { properties } = useContext(PropertyContext);
   const [tenants, setTenants] = useState([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load tenants from localStorage on component mount
   useEffect(() => {
-    // Simulated API Call
-    setTenants([
-      { id: 1, name: "John Doe", email: "john@example.com", rentDue: "$1200" },
-      { id: 2, name: "Jane Smith", email: "jane@example.com", rentDue: "$1400" }
-    ]);
-  }, []);
-
-  // Inline Component: Add Tenant Modal
-  const AddTenantModal = ({ onClose }) => {
-    const [tenantData, setTenantData] = useState({
-      name: "",
-      email: "",
-      rentDue: ""
-    });
-
-    const handleAddTenant = () => {
-      setTenants((prev) => [...prev, { id: Date.now(), ...tenantData }]);
-      onClose();
+    const loadTenants = () => {
+      try {
+        const savedTenants = localStorage.getItem("tenants");
+        if (savedTenants) {
+          setTenants(JSON.parse(savedTenants));
+        } else {
+          // Initialize with sample data only if no saved tenants exist
+          const sampleTenants = [
+            {
+              id: 1,
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+              rentDue: "$1200",
+              propertyId: properties[0]?.id.toString() || "",
+              unitId: "101",
+              leaseBegin: "2024-01-01",
+              leaseEnd: "2024-12-31",
+              phone: "555-0101",
+              status: "active"
+            },
+            {
+              id: 2,
+              firstName: "Jane",
+              lastName: "Smith",
+              email: "jane@example.com",
+              rentDue: "$1400",
+              propertyId: properties[0]?.id.toString() || "",
+              unitId: "102",
+              leaseBegin: "2024-03-01",
+              leaseEnd: "2025-02-28",
+              phone: "555-0102",
+              status: "active"
+            }
+          ];
+          setTenants(sampleTenants);
+          localStorage.setItem("tenants", JSON.stringify(sampleTenants));
+        }
+      } catch (error) {
+        console.error("Failed to load tenants:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-md w-80 sm:w-96">
-          <h2 className="text-xl font-semibold mb-4">Add Tenant</h2>
-          <input
-            type="text"
-            placeholder="Name"
-            className="w-full p-2 border rounded mb-2"
-            value={tenantData.name}
-            onChange={(e) =>
-              setTenantData({ ...tenantData, name: e.target.value })
-            }
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-2 border rounded mb-2"
-            value={tenantData.email}
-            onChange={(e) =>
-              setTenantData({ ...tenantData, email: e.target.value })
-            }
-          />
-          <input
-            type="text"
-            placeholder="Rent Due"
-            className="w-full p-2 border rounded mb-4"
-            value={tenantData.rentDue}
-            onChange={(e) =>
-              setTenantData({ ...tenantData, rentDue: e.target.value })
-            }
-          />
-          <div className="flex justify-between">
-            <button
-              className="px-4 py-2 bg-gray-500 text-white rounded-md"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-              onClick={handleAddTenant}
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    loadTenants();
+  }, [properties]);
 
-  // Inline Component: Edit Tenant Modal
-  const EditTenantModal = ({ tenant, onClose }) => {
-    const [updatedData, setUpdatedData] = useState({ ...tenant });
+  // Save tenants to localStorage whenever they change
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem("tenants", JSON.stringify(tenants));
+    }
+  }, [tenants, isLoading]);
 
-    const handleEditTenant = () => {
-      setTenants((prev) =>
-        prev.map((t) => (t.id === tenant.id ? updatedData : t))
-      );
-      onClose();
+  const handleAddTenant = (newTenant) => {
+    const tenantWithId = {
+      ...newTenant,
+      id: Date.now(),
+      status: "active",
+      phone: newTenant.phone || "N/A"
     };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-md w-80 sm:w-96">
-          <h2 className="text-xl font-semibold mb-4">Edit Tenant</h2>
-          <input
-            type="text"
-            className="w-full p-2 border rounded mb-2"
-            value={updatedData.name}
-            onChange={(e) =>
-              setUpdatedData({ ...updatedData, name: e.target.value })
-            }
-          />
-          <input
-            type="email"
-            className="w-full p-2 border rounded mb-2"
-            value={updatedData.email}
-            onChange={(e) =>
-              setUpdatedData({ ...updatedData, email: e.target.value })
-            }
-          />
-          <input
-            type="text"
-            className="w-full p-2 border rounded mb-4"
-            value={updatedData.rentDue}
-            onChange={(e) =>
-              setUpdatedData({ ...updatedData, rentDue: e.target.value })
-            }
-          />
-          <div className="flex justify-between">
-            <button
-              className="px-4 py-2 bg-gray-500 text-white rounded-md"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-              onClick={handleEditTenant}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    setTenants((prev) => [...prev, tenantWithId]);
+    setIsModalOpen(false);
   };
 
-  // Inline Component: Remove Tenant Button
-  const RemoveTenantButton = ({ tenantId }) => {
-    const handleRemove = () =>
+  const handleEditTenant = (updatedTenant) => {
+    setTenants((prev) =>
+      prev.map((t) => (t.id === updatedTenant.id ? updatedTenant : t))
+    );
+    setSelectedTenant(null);
+  };
+
+  const handleDeleteTenant = (tenantId) => {
+    if (window.confirm("Are you sure you want to delete this tenant?")) {
       setTenants((prev) => prev.filter((tenant) => tenant.id !== tenantId));
+    }
+  };
 
-    return (
-      <button onClick={handleRemove} className="text-red-500 hover:underline">
-        Remove
-      </button>
+  const handleStatusChange = (tenantId, newStatus) => {
+    setTenants((prev) =>
+      prev.map((t) => (t.id === tenantId ? { ...t, status: newStatus } : t))
     );
   };
 
-  // Inline Component: Tenants Table
-  const TenantsTable = () => (
-    <div className="overflow-x-auto mt-4">
-      <table className="w-full bg-white shadow-md rounded-lg">
-        <thead className="bg-blue-600 text-white">
-          <tr>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left hidden sm:table-cell">Email</th>
-            <th className="p-3 text-left">Rent Due</th>
-            <th className="p-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tenants.map((tenant) => (
-            <tr
-              key={tenant.id}
-              className="border-b hover:bg-gray-100 transition"
-            >
-              <td className="p-3">{tenant.name}</td>
-              <td className="p-3 hidden sm:table-cell">{tenant.email}</td>
-              <td className="p-3">{tenant.rentDue}</td>
-              <td className="p-3 flex flex-col sm:flex-row gap-2">
-                <button
-                  className="text-blue-500 hover:underline"
-                  onClick={() => setSelectedTenant(tenant)}
-                >
-                  Edit
-                </button>
-                <RemoveTenantButton tenantId={tenant.id} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  const filteredTenants = tenants.filter((tenant) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      `${tenant.firstName} ${tenant.lastName}`
+        .toLowerCase()
+        .includes(searchLower) ||
+      tenant.email.toLowerCase().includes(searchLower) ||
+      tenant.phone.toLowerCase().includes(searchLower) ||
+      tenant.rentDue.toLowerCase().includes(searchLower) ||
+      tenant.status.toLowerCase().includes(searchLower)
+    );
+  });
 
-      {selectedTenant && (
-        <EditTenantModal
+  const TenantModal = ({ tenant, onClose, onSubmit }) => {
+    const [formData, setFormData] = useState(
+      tenant || {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        rentDue: "",
+        propertyId: properties[0]?.id.toString() || "",
+        unitId: "",
+        leaseBegin: "",
+        leaseEnd: "",
+        status: "active"
+      }
+    );
+
+    const [errors, setErrors] = useState({});
+
+    const availableUnits =
+      properties.find((p) => p.id.toString() === formData.propertyId)?.units ||
+      [];
+
+    const validateForm = () => {
+      const newErrors = {};
+      if (!formData.firstName.trim()) newErrors.firstName = "Required";
+      if (!formData.lastName.trim()) newErrors.lastName = "Required";
+      if (!formData.email.trim()) newErrors.email = "Required";
+      else if (!/^\S+@\S+\.\S+$/.test(formData.email))
+        newErrors.email = "Invalid email";
+      if (!formData.rentDue.trim()) newErrors.rentDue = "Required";
+      if (!formData.propertyId) newErrors.propertyId = "Required";
+      if (!formData.unitId) newErrors.unitId = "Required";
+
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        ...(name === "propertyId" && { unitId: "" }) // Reset unit when property changes
+      }));
+    };
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (validateForm()) {
+        onSubmit(formData);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <h2 className="text-xl font-semibold mb-4">
+            {tenant ? "Edit Tenant" : "Add Tenant"}
+          </h2>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  className={`w-full p-2 border rounded ${
+                    errors.firstName ? "border-red-500" : ""
+                  }`}
+                  value={formData.firstName}
+                  onChange={handleChange}
+                />
+                {errors.firstName && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.firstName}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name *
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  className={`w-full p-2 border rounded ${
+                    errors.lastName ? "border-red-500" : ""
+                  }`}
+                  value={formData.lastName}
+                  onChange={handleChange}
+                />
+                {errors.lastName && (
+                  <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  className={`w-full p-2 border rounded ${
+                    errors.email ? "border-red-500" : ""
+                  }`}
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  className="w-full p-2 border rounded"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="555-123-4567"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rent Due *
+                </label>
+                <input
+                  type="text"
+                  name="rentDue"
+                  className={`w-full p-2 border rounded ${
+                    errors.rentDue ? "border-red-500" : ""
+                  }`}
+                  value={formData.rentDue}
+                  onChange={handleChange}
+                  placeholder="$1200"
+                />
+                {errors.rentDue && (
+                  <p className="text-red-500 text-xs mt-1">{errors.rentDue}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Property *
+                </label>
+                <select
+                  name="propertyId"
+                  className={`w-full p-2 border rounded ${
+                    errors.propertyId ? "border-red-500" : ""
+                  }`}
+                  value={formData.propertyId}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Property</option>
+                  {properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.propertyId && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.propertyId}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit *
+                </label>
+                <select
+                  name="unitId"
+                  className={`w-full p-2 border rounded ${
+                    errors.unitId ? "border-red-500" : ""
+                  }`}
+                  value={formData.unitId}
+                  onChange={handleChange}
+                  disabled={!formData.propertyId}
+                >
+                  <option value="">Select Unit</option>
+                  {availableUnits.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.number} (${unit.rent})
+                    </option>
+                  ))}
+                </select>
+                {errors.unitId && (
+                  <p className="text-red-500 text-xs mt-1">{errors.unitId}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lease Start
+                  </label>
+                  <input
+                    type="date"
+                    name="leaseBegin"
+                    className="w-full p-2 border rounded"
+                    value={formData.leaseBegin}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lease End
+                  </label>
+                  <input
+                    type="date"
+                    name="leaseEnd"
+                    className="w-full p-2 border rounded"
+                    value={formData.leaseEnd}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              {tenant && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    className="w-full p-2 border rounded"
+                    value={formData.status}
+                    onChange={handleChange}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="past">Past Tenant</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {tenant ? "Save Changes" : "Add Tenant"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 p-4 md:p-6 flex items-center justify-center">
+          <div className="text-lg">Loading tenants...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex">
+      <Sidebar />
+      <div className="flex-1 p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+          <h2 className="text-2xl font-bold mb-4 sm:mb-0">Tenant Management</h2>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Search tenants..."
+              className="p-2 border rounded flex-1"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => {
+                setSelectedTenant(null);
+                setIsModalOpen(true);
+              }}
+            >
+              Add Tenant
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto bg-white shadow rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tenant
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Property/Unit
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rent
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Lease Period
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredTenants.length > 0 ? (
+                filteredTenants.map((tenant) => {
+                  const property = properties.find(
+                    (p) => p.id.toString() === tenant.propertyId
+                  );
+                  const unit = property?.units.find(
+                    (u) => u.id.toString() === tenant.unitId
+                  );
+
+                  return (
+                    <tr key={tenant.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span className="text-gray-600">
+                              {tenant.firstName.charAt(0)}
+                              {tenant.lastName.charAt(0)}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="font-medium">
+                              {tenant.firstName} {tenant.lastName}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                        <div className="text-gray-600">{tenant.email}</div>
+                        <div className="text-sm text-gray-500">
+                          {tenant.phone}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="font-medium">
+                            {property?.name || "N/A"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {unit?.number || "N/A"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-gray-600">{tenant.rentDue}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                        <div>
+                          <div className="text-sm">
+                            {tenant.leaseBegin || "N/A"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {tenant.leaseEnd || "N/A"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            tenant.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : tenant.status === "inactive"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {tenant.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setSelectedTenant(tenant)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newStatus =
+                                tenant.status === "active"
+                                  ? "inactive"
+                                  : "active";
+                              handleStatusChange(tenant.id, newStatus);
+                            }}
+                            className="text-yellow-600 hover:text-yellow-900"
+                          >
+                            {tenant.status === "active"
+                              ? "Deactivate"
+                              : "Activate"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTenant(tenant.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
+                    {searchTerm
+                      ? "No matching tenants found"
+                      : "No tenants available"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <TenantModal
           tenant={selectedTenant}
-          onClose={() => setSelectedTenant(null)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedTenant(null);
+          }}
+          onSubmit={selectedTenant ? handleEditTenant : handleAddTenant}
         />
       )}
     </div>
   );
-
-  return (
-    <div className="flex">
-      {/* Sidebar (Fixed) */}
-      <Sidebar />
-
-      {/* Main Content in Inline Sections */}
-      <div className="flex flex-col md:flex-row flex-1 gap-4 p-4 md:p-6">
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold mb-4">Tenant Management</h2>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded-md w-full sm:w-auto"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            Add Tenant
-          </button>
-          <TenantsTable />
-        </div>
-      </div>
-
-      {/* Add Tenant Modal */}
-      {isAddModalOpen && (
-        <AddTenantModal onClose={() => setIsAddModalOpen(false)} />
-      )}
-    </div>
-  );
 }
-
-export default Tenants;
